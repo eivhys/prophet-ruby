@@ -1,0 +1,3 @@
+[submodule "cmdstan-ruby"]
+	path = cmdstan-ruby
+	url = https://github.com/eivhys/cmdstan-ruby
