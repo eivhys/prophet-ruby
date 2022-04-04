@@ -1,5 +1,5 @@
 # dependencies
-require_relative './cmdstan-ruby/lib/cmdstan-ruby'
+require_relative 'cmdstan-ruby'
 require 'rover'
 require 'numo/narray'
 
