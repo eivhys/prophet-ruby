@@ -1,18 +1,18 @@
 # dependencies
-require "cmdstan"
-require "rover"
-require "numo/narray"
+require_relative './cmdstan-ruby/lib/cmdstan-ruby'
+require 'rover'
+require 'numo/narray'
 
 # stdlib
-require "logger"
-require "set"
+require 'logger'
+require 'set'
 
 # modules
-require "prophet/holidays"
-require "prophet/plot"
-require "prophet/forecaster"
-require "prophet/stan_backend"
-require "prophet/version"
+require 'prophet/holidays'
+require 'prophet/plot'
+require 'prophet/forecaster'
+require 'prophet/stan_backend'
+require 'prophet/version'
 
 module Prophet
   class Error < StandardError; end
@@ -22,7 +22,7 @@ module Prophet
   end
 
   def self.forecast(series, count: 10)
-    raise ArgumentError, "Series must have at least 10 data points" if series.size < 10
+    raise ArgumentError, 'Series must have at least 10 data points' if series.size < 10
 
     # check type to determine output format
     # check for before converting to time
@@ -40,28 +40,28 @@ module Prophet
 
     freq =
       if year
-        "YS"
+        'YS'
       elsif quarter
-        "QS"
+        'QS'
       elsif month
-        "MS"
+        'MS'
       elsif week
-        "W"
+        'W'
       elsif day
-        "D"
+        'D'
       else
         diff = Rover::Vector.new(times).sort.diff.to_numo[1..-1]
         min_diff = diff.min.to_i
 
         # could be another common divisor
         # but keep it simple for now
-        raise "Unknown frequency" unless (diff % min_diff).eq(0).all?
+        raise 'Unknown frequency' unless (diff % min_diff).eq(0).all?
 
         "#{min_diff}S"
       end
 
     # use series, not times, so dates are handled correctly
-    df = Rover::DataFrame.new({"ds" => series.keys, "y" => series.values})
+    df = Rover::DataFrame.new({ 'ds' => series.keys, 'y' => series.values })
 
     m = Prophet.new
     m.logger.level = ::Logger::FATAL # no logging
@@ -69,28 +69,28 @@ module Prophet
 
     future = m.make_future_dataframe(periods: count, include_history: false, freq: freq)
     forecast = m.predict(future)
-    result = forecast[["ds", "yhat"]].to_a
+    result = forecast[%w[ds yhat]].to_a
 
     # use the same format as input
     if dates
-      result.each { |v| v["ds"] = v["ds"].to_date }
+      result.each { |v| v['ds'] = v['ds'].to_date }
     elsif time_zone
-      result.each { |v| v["ds"] = v["ds"].in_time_zone(time_zone) }
+      result.each { |v| v['ds'] = v['ds'].in_time_zone(time_zone) }
     elsif utc
-      result.each { |v| v["ds"] = v["ds"].utc }
+      result.each { |v| v['ds'] = v['ds'].utc }
     else
-      result.each { |v| v["ds"] = v["ds"].localtime }
+      result.each { |v| v['ds'] = v['ds'].localtime }
     end
-    result.map { |v| [v["ds"], v["yhat"]] }.to_h
+    result.map { |v| [v['ds'], v['yhat']] }.to_h
   end
 
   def self.anomalies(series)
-    df = Rover::DataFrame.new(series.map { |k, v| {"ds" => k, "y" => v} })
+    df = Rover::DataFrame.new(series.map { |k, v| { 'ds' => k, 'y' => v } })
     m = Prophet.new(interval_width: 0.99)
     m.logger.level = ::Logger::FATAL # no logging
     m.fit(df)
     forecast = m.predict(df)
     # filter df["ds"] to ensure dates/times in same format as input
-    df["ds"][(df["y"] < forecast["yhat_lower"]) | (df["y"] > forecast["yhat_upper"])].to_a
+    df['ds'][(df['y'] < forecast['yhat_lower']) | (df['y'] > forecast['yhat_upper'])].to_a
   end
 end
